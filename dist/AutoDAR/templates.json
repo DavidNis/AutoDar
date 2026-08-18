@@ -1,0 +1,82 @@
+{
+  "morning": {
+    "display_name": "Morning",
+    "file": "HFA18 Morning Shift Template Copy.xlsx",
+    "sheet": "Shift Report",
+    "output_filename": "HFA18 Morning Shift {date}.xlsx",
+    "patrol_prefix": "Patrol by security officer:",
+    "cells": {
+      "shift_date": "H9",
+      "team_leader": {"name": "D17", "pin": "E17"},
+      "security_officers": [
+        {"name": "D23", "pin": "E23"},
+        {"name": "D24", "pin": "E24"},
+        {"name": "D25", "pin": "E25"}
+      ],
+      "control_room": {"name": "D27", "pin": "E27"},
+      "patrols": ["D30", "D31", "D32"],
+      "dar_officer": "D35",
+      "dar_date": "M35"
+    }
+  },
+  "evening": {
+    "display_name": "Evening",
+    "file": "HFA18 Evening Shift template1.xlsx",
+    "sheet": "Shift Report",
+    "output_filename": "HFA18 Evening Shift {date}.xlsx",
+    "patrol_prefix": "Patrol by security officer:",
+    "cells": {
+      "shift_date": "H9",
+      "team_leader": {"name": "D17", "pin": "E17"},
+      "security_officers": [
+        {"name": "D23", "pin": "E23"},
+        {"name": "D24", "pin": "E24"},
+        {"name": "D25", "pin": "E25"}
+      ],
+      "control_room": {"name": "D28", "pin": "E28"},
+      "patrols": ["D31", "D32", "D33"],
+      "dar_officer": "D36",
+      "dar_date": "M36"
+    }
+  },
+  "night": {
+    "display_name": "Night",
+    "file": "HFA18 Night Shift Template Copy.xlsx",
+    "sheet": "Shift Report",
+    "output_filename": "HFA18 Night Shift {date}.xlsx",
+    "patrol_prefix": "Patrol by security officer:",
+    "cells": {
+      "shift_date": "H9",
+      "team_leader": {"name": "D17", "pin": "E17"},
+      "security_officers": [
+        {"name": "D23", "pin": "E23"},
+        {"name": "D24", "pin": "E24"},
+        {"name": "D25", "pin": "E25"}
+      ],
+      "control_room": {"name": "D27", "pin": "E27"},
+      "patrols": ["D30", "D31", "D32"],
+      "dar_officer": "D35",
+      "dar_date": "M35"
+    }
+  },
+  "weekend": {
+    "display_name": "Weekend",
+    "file": "HFA18 Weekend Shift Template.xlsx",
+    "sheet": "Shift Report",
+    "output_filename": "HFA18 Weekend Shift {date}.xlsx",
+    "patrol_prefix": "Patrol by security officer:",
+    "cells": {
+      "shift_date": "H9",
+      "team_leader": {"name": "D17", "pin": "E17"},
+      "security_officers": [
+        {"name": "D23", "pin": "E23"},
+        {"name": "D24", "pin": "E24"},
+        {"name": "D25", "pin": "E25"}
+      ],
+      "control_room": {"name": "D27", "pin": "E27"},
+      "patrols": ["D30", "D31", "D32"],
+      "dar_officer": "D35",
+      "dar_date": "M35"
+    }
+  }
+}
