@@ -1,6 +1,6 @@
 # AutoDAR
 
-AutoDAR is a Windows desktop application that fills the existing HFA18 Morning Shift Excel template. It copies the original OOXML package, changes only configured cells in the selected worksheet, and saves a new workbook. This preserves custom XML and worksheet extensions that normal workbook rewrites can discard.
+AutoDAR is a Windows desktop application that fills the existing HFA18 Morning, Evening, Night, and Weekend Excel templates. It copies the selected OOXML package, changes only configured cells in the selected worksheet, and saves a new workbook. This preserves custom XML and worksheet extensions that normal workbook rewrites can discard.
 
 ## Windows setup
 
@@ -23,6 +23,9 @@ If PowerShell blocks activation, run the venv Python directly:
 Keep these files beside `main.py`:
 
 - `HFA18 Morning Shift Template Copy.xlsx`
+- `HFA18 Evening Shift template1.xlsx`
+- `HFA18 Night Shift Template Copy.xlsx`
+- `HFA18 Weekend Shift Template.xlsx`
 - `names_by_number.json`
 - `roles.json`
 - `templates.json`

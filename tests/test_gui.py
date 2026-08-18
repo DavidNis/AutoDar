@@ -55,3 +55,33 @@ def test_configured_team_leader_and_control_room_membership():
         assert control_room == team_leaders | {"Lior Levy", "Adi Uliel", "David Nisanov"}
     finally:
         window.close()
+
+
+def test_shift_selector_lists_all_templates_and_preserves_selections():
+    window = _window()
+    try:
+        assert [window.template_combo.itemText(index) for index in range(window.template_combo.count())] == [
+            "Morning", "Evening", "Night", "Weekend"
+        ]
+        window.team_leader.setCurrentIndex(1)
+        window.officers[0].setCurrentIndex(1)
+        window.control_room.setCurrentIndex(4)
+        window.patrol_officer.setCurrentIndex(2)
+        window.dar_officer.setCurrentIndex(3)
+        selected = (
+            window.team_leader.employee_pin(),
+            window.officers[0].employee_pin(),
+            window.control_room.employee_pin(),
+            window.patrol_officer.employee_pin(),
+            window.dar_officer.employee_pin(),
+        )
+        window.template_combo.setCurrentIndex(1)
+        assert (
+            window.team_leader.employee_pin(),
+            window.officers[0].employee_pin(),
+            window.control_room.employee_pin(),
+            window.patrol_officer.employee_pin(),
+            window.dar_officer.employee_pin(),
+        ) == selected
+    finally:
+        window.close()

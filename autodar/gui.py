@@ -318,13 +318,18 @@ class MainWindow(QMainWindow):
         template = self.template
         if len(template.cells.security_officers) != 3 or len(template.cells.patrols) != 3:
             raise ConfigurationError("The current GUI requires three officer positions and three patrol output rows.")
-        self.team_leader.set_employees(self._eligible(self.roles.team_leaders))
+        selected_leader = self.team_leader.employee_pin()
+        selected_officers = [combo.employee_pin() for combo in self.officers]
+        selected_control = self.control_room.employee_pin()
+        selected_patrol = self.patrol_officer.employee_pin()
+        selected_dar = self.dar_officer.employee_pin()
+        self.team_leader.set_employees(self._eligible(self.roles.team_leaders), selected_leader)
         officer_pool = self._eligible(self.roles.security_officers)
-        for combo in self.officers:
-            combo.set_employees(officer_pool)
-        self.control_room.set_employees(self._eligible(self.roles.control_room))
-        self.patrol_officer.set_employees(officer_pool)
-        self.dar_officer.set_employees(sorted_employees(self.employees))
+        for combo, pin in zip(self.officers, selected_officers, strict=True):
+            combo.set_employees(officer_pool, pin)
+        self.control_room.set_employees(self._eligible(self.roles.control_room), selected_control)
+        self.patrol_officer.set_employees(officer_pool, selected_patrol)
+        self.dar_officer.set_employees(sorted_employees(self.employees), selected_dar)
         missing = []
         if not self._eligible(self.roles.team_leaders):
             missing.append("team_leaders")
