@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 from PySide6.QtCore import QDate, Qt
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtCore import QUrl
 from PySide6.QtWidgets import (
     QApplication,
@@ -21,6 +21,8 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -34,13 +36,123 @@ from .validation import validate_report
 
 LOGGER = logging.getLogger(__name__)
 
+APP_STYLESHEET = """
+QMainWindow, QWidget#appRoot {
+    background: #f3f5f4;
+    color: #172321;
+}
+QLabel#appTitle {
+    color: #102421;
+    font-size: 24px;
+    font-weight: 700;
+}
+QLabel#appContext {
+    color: #64716f;
+    font-size: 12px;
+}
+QFrame#accentLine {
+    background: #168277;
+    border: 0;
+}
+QGroupBox {
+    background: #ffffff;
+    border: 1px solid #d8dfdd;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 12px;
+    padding: 16px 14px 14px 14px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 5px;
+    color: #344441;
+}
+QLabel#fieldLabel {
+    color: #53615f;
+    font-size: 11px;
+    font-weight: 600;
+}
+QComboBox, QDateEdit {
+    min-height: 36px;
+    padding: 0 10px;
+    background: #ffffff;
+    color: #172321;
+    border: 1px solid #bdc9c6;
+    border-radius: 5px;
+    selection-background-color: #168277;
+}
+QComboBox:hover, QDateEdit:hover {
+    border-color: #718d87;
+}
+QComboBox:focus, QDateEdit:focus {
+    border: 2px solid #168277;
+    padding-left: 9px;
+}
+QComboBox QAbstractItemView {
+    background: #ffffff;
+    color: #172321;
+    border: 1px solid #bdc9c6;
+    selection-background-color: #dcefeb;
+    selection-color: #102421;
+    outline: 0;
+    padding: 4px;
+}
+QPushButton {
+    min-height: 36px;
+    padding: 0 16px;
+    border: 1px solid #bdc9c6;
+    border-radius: 5px;
+    background: #ffffff;
+    color: #263532;
+    font-weight: 600;
+}
+QPushButton:hover {
+    background: #edf2f0;
+    border-color: #8ba09b;
+}
+QPushButton:pressed {
+    background: #e1e8e6;
+}
+QPushButton#primaryButton {
+    background: #168277;
+    border-color: #168277;
+    color: #ffffff;
+    padding: 0 20px;
+}
+QPushButton#primaryButton:hover {
+    background: #116e65;
+    border-color: #116e65;
+}
+QPushButton#openButton {
+    background: #fff8e8;
+    border-color: #e3c77c;
+    color: #644d12;
+}
+QLabel#statusLabel {
+    color: #53615f;
+    font-size: 11px;
+}
+QCalendarWidget QWidget {
+    background: #ffffff;
+    color: #172321;
+}
+QCalendarWidget QAbstractItemView:enabled {
+    selection-background-color: #168277;
+    selection-color: #ffffff;
+}
+"""
+
 
 class EmployeeCombo(QComboBox):
     def __init__(self) -> None:
         super().__init__()
         self.setEditable(True)
         self.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
-        self.setMinimumWidth(245)
+        self.setMinimumWidth(260)
+        self.setFixedHeight(38)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setPlaceholderText("Select employee")
         completer = self.completer()
         completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
@@ -77,18 +189,41 @@ class MainWindow(QMainWindow):
 
     def _build_ui(self) -> None:
         self.setWindowTitle("AutoDAR Shift Report")
-        self.setMinimumSize(760, 620)
+        self.setMinimumSize(780, 680)
+        self.resize(900, 700)
+        self.setFont(QFont("Segoe UI", 10))
+        self.setStyleSheet(APP_STYLESHEET)
         central = QWidget()
+        central.setObjectName("appRoot")
         root = QVBoxLayout(central)
-        root.setContentsMargins(18, 16, 18, 16)
-        root.setSpacing(10)
+        root.setContentsMargins(24, 20, 24, 20)
+        root.setSpacing(12)
+
+        header = QVBoxLayout()
+        header.setSpacing(2)
+        title = QLabel("Shift Report")
+        title.setObjectName("appTitle")
+        context = QLabel("HFA18 Operations")
+        context.setObjectName("appContext")
+        header.addWidget(title)
+        header.addWidget(context)
+        root.addLayout(header)
+        accent = QFrame()
+        accent.setObjectName("accentLine")
+        accent.setFixedHeight(3)
+        root.addWidget(accent)
 
         shift_box = QGroupBox("Shift")
         shift_form = QFormLayout(shift_box)
+        shift_form.setContentsMargins(14, 18, 14, 12)
+        shift_form.setHorizontalSpacing(18)
+        shift_form.setVerticalSpacing(8)
+        shift_form.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.template_combo = QComboBox()
         for key, template in self.templates.items():
             self.template_combo.addItem(template.display_name, key)
         self.shift_date = QDateEdit(QDate.currentDate())
+        self.shift_date.setFixedHeight(38)
         self.shift_date.setCalendarPopup(True)
         self.shift_date.setDisplayFormat("dd/MM/yyyy")
         shift_form.addRow("Template", self.template_combo)
@@ -96,7 +231,11 @@ class MainWindow(QMainWindow):
         root.addWidget(shift_box)
 
         personnel = QGroupBox("Personnel")
+        personnel.setMinimumHeight(236)
         grid = QGridLayout(personnel)
+        grid.setContentsMargins(14, 18, 14, 14)
+        grid.setHorizontalSpacing(18)
+        grid.setVerticalSpacing(12)
         self.team_leader = EmployeeCombo()
         self.officers = [EmployeeCombo() for _ in range(3)]
         self.control_room = EmployeeCombo()
@@ -105,11 +244,22 @@ class MainWindow(QMainWindow):
         personnel_fields.append(("Control Room", self.control_room))
         for index, (label, combo) in enumerate(personnel_fields):
             row, column = divmod(index, 2)
-            grid.addWidget(QLabel(label), row, column * 2)
-            grid.addWidget(combo, row, column * 2 + 1)
+            field = QWidget()
+            field_layout = QVBoxLayout(field)
+            field_layout.setContentsMargins(0, 0, 0, 0)
+            field_layout.setSpacing(5)
+            label_widget = QLabel(label)
+            label_widget.setObjectName("fieldLabel")
+            label_widget.setFixedHeight(16)
+            field_layout.addWidget(label_widget)
+            field_layout.addWidget(combo)
+            grid.addWidget(field, row, column)
+        grid.setColumnStretch(0, 1)
+        grid.setColumnStretch(1, 1)
         root.addWidget(personnel)
 
         lower = QHBoxLayout()
+        lower.setSpacing(12)
         patrol_box = QGroupBox("Patrol")
         patrol_form = QFormLayout(patrol_box)
         self.patrol_officer = EmployeeCombo()
@@ -127,12 +277,21 @@ class MainWindow(QMainWindow):
         root.addWidget(line)
         buttons = QHBoxLayout()
         self.status_label = QLabel("")
+        self.status_label.setObjectName("statusLabel")
         self.status_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         buttons.addWidget(self.status_label, 1)
         self.open_button = QPushButton("Open Report")
+        self.open_button.setObjectName("openButton")
+        self.open_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
+        self.open_button.setToolTip("Open the last generated report")
         self.open_button.setVisible(False)
         clear_button = QPushButton("Clear Form")
+        clear_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogResetButton))
+        clear_button.setToolTip("Reset all selections")
         generate_button = QPushButton("Generate Report")
+        generate_button.setObjectName("primaryButton")
+        generate_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+        generate_button.setToolTip("Generate and save the Excel report")
         generate_button.setDefault(True)
         buttons.addWidget(self.open_button)
         buttons.addWidget(clear_button)

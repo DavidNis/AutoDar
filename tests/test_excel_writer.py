@@ -31,6 +31,7 @@ def test_morning_report_mapping_and_template_integrity(tmp_path):
     generated = load_workbook(output, data_only=False)
     sheet = generated["Shift Report"]
     assert sheet["H9"].value == date(2026, 8, 19)
+    assert sheet["H9"].number_format == "dd/mm/yyyy"
     assert (sheet["D17"].value, sheet["E17"].value) == (employees[0].name, employees[0].pin)
     for row, employee in zip((23, 24, 25), employees[1:4], strict=True):
         assert (sheet[f"D{row}"].value, sheet[f"E{row}"].value) == (employee.name, employee.pin)
@@ -39,6 +40,7 @@ def test_morning_report_mapping_and_template_integrity(tmp_path):
         assert sheet[f"D{row}"].value == f"Patrol by security officer: {employees[1].name}"
     assert sheet["D35"].value == employees[0].name
     assert sheet["M35"].value == date(2026, 8, 19)
+    assert sheet["M35"].number_format == "dd/mm/yyyy"
     assert generated.sheetnames == original.sheetnames
     assert set(generated["Shift Report"].merged_cells.ranges) == set(original["Shift Report"].merged_cells.ranges)
     for coordinate in ("F17", "H17", "J17", "L17", "F23", "H23", "J23", "L23", "M30"):
@@ -47,8 +49,11 @@ def test_morning_report_mapping_and_template_integrity(tmp_path):
     original.close()
     generated.close()
     with ZipFile(template.file) as source, ZipFile(output) as result:
-        assert source.read("xl/styles.xml") == result.read("xl/styles.xml")
         assert set(source.namelist()) == set(result.namelist())
         for name in source.namelist():
-            if name != "xl/worksheets/sheet1.xml":
+            if name not in {"xl/worksheets/sheet1.xml", "xl/styles.xml"}:
                 assert source.read(name) == result.read(name)
+        worksheet_xml = result.read("xl/worksheets/sheet1.xml").decode("utf-8")
+        for prefix in ("mc", "x14ac", "xr", "xr2", "xr3"):
+            assert f"xmlns:{prefix}=" in worksheet_xml
+        assert 'mc:Ignorable="x14ac xr xr2 xr3"' in worksheet_xml

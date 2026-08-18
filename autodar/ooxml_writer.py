@@ -4,6 +4,8 @@ import logging
 import os
 import re
 import tempfile
+from copy import deepcopy
+from io import BytesIO
 from datetime import date
 from pathlib import Path, PurePosixPath
 from xml.etree import ElementTree as ET
@@ -23,6 +25,29 @@ ET.register_namespace("r", REL_NS)
 
 def _qname(local: str) -> str:
     return f"{{{MAIN_NS}}}{local}"
+
+
+def _register_source_namespaces(xml: bytes) -> dict[str, str]:
+    """Keep prefixes referenced by mc:Ignorable valid after serialization."""
+    namespaces: dict[str, str] = {}
+    for _event, (prefix, uri) in ET.iterparse(BytesIO(xml), events=("start-ns",)):
+        namespaces[prefix] = uri
+        if prefix != "xml":
+            ET.register_namespace(prefix, uri)
+    return namespaces
+
+
+def _serialize_xml(root: ET.Element, namespaces: dict[str, str], root_name: str) -> bytes:
+    xml = ET.tostring(root, encoding="utf-8", xml_declaration=True)
+    missing = [
+        f' xmlns:{prefix}="{uri}"'.encode("utf-8")
+        for prefix, uri in namespaces.items()
+        if prefix and f"xmlns:{prefix}=".encode("utf-8") not in xml
+    ]
+    if missing:
+        marker = f"<{root_name}".encode("utf-8")
+        xml = xml.replace(marker, marker + b"".join(missing), 1)
+    return xml
 
 
 def _worksheet_path(archive: ZipFile, sheet_name: str) -> str:
@@ -90,12 +115,47 @@ def _set_text(root: ET.Element, reference: str, value: str) -> None:
     ET.SubElement(inline, _qname("t")).text = value
 
 
-def _set_date(root: ET.Element, reference: str, value: date) -> None:
+def _set_date(root: ET.Element, reference: str, value: date, style_id: int) -> None:
     cell = _get_or_create_cell(root, reference)
     _clear_value(cell)
     # ISO date cells are true Excel dates without requiring a new workbook style.
     cell.set("t", "d")
+    cell.set("s", str(style_id))
     ET.SubElement(cell, _qname("v")).text = value.isoformat()
+
+
+def _add_date_style(styles_xml: bytes, base_style_id: int) -> tuple[bytes, int]:
+    namespaces = _register_source_namespaces(styles_xml)
+    root = ET.fromstring(styles_xml)
+    num_fmts = root.find(_qname("numFmts"))
+    if num_fmts is None:
+        num_fmts = ET.Element(_qname("numFmts"), {"count": "0"})
+        root.insert(0, num_fmts)
+    existing_formats = num_fmts.findall(_qname("numFmt"))
+    date_format = next(
+        (item for item in existing_formats if item.get("formatCode", "").lower() == "dd/mm/yyyy"),
+        None,
+    )
+    if date_format is None:
+        used_ids = [int(item.get("numFmtId", "163")) for item in existing_formats]
+        date_format_id = max([163, *used_ids]) + 1
+        date_format = ET.SubElement(
+            num_fmts,
+            _qname("numFmt"),
+            {"numFmtId": str(date_format_id), "formatCode": "dd/mm/yyyy"},
+        )
+        num_fmts.set("count", str(len(existing_formats) + 1))
+    else:
+        date_format_id = int(date_format.get("numFmtId"))
+    cell_xfs = root.find(_qname("cellXfs"))
+    if cell_xfs is None or base_style_id >= len(cell_xfs):
+        raise ReportError("The template's date cell style is invalid.")
+    date_style = deepcopy(cell_xfs[base_style_id])
+    date_style.set("numFmtId", str(date_format_id))
+    date_style.set("applyNumberFormat", "1")
+    cell_xfs.append(date_style)
+    cell_xfs.set("count", str(len(cell_xfs)))
+    return _serialize_xml(root, namespaces, "styleSheet"), len(cell_xfs) - 1
 
 
 def _verify_top_left_targets(root: ET.Element, addresses: list[str]) -> None:
@@ -113,7 +173,7 @@ def _verify_top_left_targets(root: ET.Element, addresses: list[str]) -> None:
                 raise ReportError(f"Configured cell {address} is not the top-left cell of merged range {merged_range}.")
 
 
-def _copy_archive_with_sheet(source: Path, destination: Path, sheet_path: str, sheet_xml: bytes) -> None:
+def _copy_archive(source: Path, destination: Path, replacements: dict[str, bytes]) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary_name: str | None = None
     try:
@@ -121,7 +181,7 @@ def _copy_archive_with_sheet(source: Path, destination: Path, sheet_path: str, s
             temporary_name = temporary.name
         with ZipFile(source, "r") as original, ZipFile(temporary_name, "w") as result:
             for info in original.infolist():
-                result.writestr(info, sheet_xml if info.filename == sheet_path else original.read(info.filename))
+                result.writestr(info, replacements.get(info.filename, original.read(info.filename)))
         os.replace(temporary_name, destination)
         temporary_name = None
     finally:
@@ -143,9 +203,14 @@ def write_report(template: TemplateConfig, data: ReportData, destination: Path) 
     try:
         with ZipFile(template.file, "r") as archive:
             sheet_path = _worksheet_path(archive, template.sheet)
-            root = ET.fromstring(archive.read(sheet_path))
+            source_xml = archive.read(sheet_path)
+            namespaces = _register_source_namespaces(source_xml)
+            root = ET.fromstring(source_xml)
+            styles_xml = archive.read("xl/styles.xml")
         _verify_top_left_targets(root, addresses)
-        _set_date(root, cells.shift_date, data.shift_date)
+        base_date_style = int(_get_or_create_cell(root, cells.shift_date).get("s", "0"))
+        styles_xml, date_style_id = _add_date_style(styles_xml, base_date_style)
+        _set_date(root, cells.shift_date, data.shift_date, date_style_id)
         _set_text(root, cells.team_leader.name, data.team_leader.name)
         _set_text(root, cells.team_leader.pin, data.team_leader.pin)
         for mapping, employee in zip(cells.security_officers, data.security_officers, strict=True):
@@ -156,10 +221,14 @@ def write_report(template: TemplateConfig, data: ReportData, destination: Path) 
         for address in cells.patrols:
             _set_text(root, address, f"{template.patrol_prefix} {data.patrol_officer.name}")
         _set_text(root, cells.dar_officer, data.dar_officer.name)
-        _set_date(root, cells.dar_date, data.shift_date)
-        _copy_archive_with_sheet(
-            template.file, destination, sheet_path,
-            ET.tostring(root, encoding="utf-8", xml_declaration=True),
+        _set_date(root, cells.dar_date, data.shift_date, date_style_id)
+        _copy_archive(
+            template.file,
+            destination,
+            {
+                sheet_path: _serialize_xml(root, namespaces, "worksheet"),
+                "xl/styles.xml": styles_xml,
+            },
         )
     except ReportError:
         raise

@@ -40,3 +40,18 @@ def test_employee_dropdowns_show_names_and_store_pins():
         assert window.patrol_officer.count() == len(window.employees) + 1
     finally:
         window.close()
+
+
+def test_configured_team_leader_and_control_room_membership():
+    window = _window()
+    try:
+        team_leaders = {window.team_leader.itemText(index) for index in range(1, window.team_leader.count())}
+        control_room = {window.control_room.itemText(index) for index in range(1, window.control_room.count())}
+        assert team_leaders == {
+            "Evgeni Kanaev", "Shlomo Esayas", "Omer Buzaglo", "Aviv Kobrin",
+            "Avraham Taganiya", "Itay Bakar", "Meital Sabatan", "Michael Morozov",
+            "Maxim Yarkho", "Neorai Kadosh", "Keren Or Belmut", "Ron Furman",
+        }
+        assert control_room == team_leaders | {"Lior Levy", "Adi Uliel", "David Nisanov"}
+    finally:
+        window.close()

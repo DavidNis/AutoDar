@@ -31,7 +31,7 @@ The original Excel template is never an output target. AutoDAR asks where to sav
 
 ## Configure roles
 
-Edit `roles.json` and list eligible employee PINs under `team_leaders` and `control_room`. These lists intentionally start empty because no authoritative eligible employees were supplied. Security officers currently use `"all"`.
+Edit `roles.json` to maintain eligible employee PINs under `team_leaders` and `control_room`. The supplied authorized employees are configured there. Security officers currently use `"all"`.
 
 ```json
 {
