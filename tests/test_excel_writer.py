@@ -21,9 +21,8 @@ def test_morning_report_mapping_and_template_integrity(tmp_path):
         team_leader=employees[0],
         security_officers=tuple(employees[1:4]),
         control_room=employees[4],
-        patrols=tuple(employees[1:4]),
+        patrol_officer=employees[1],
         dar_officer=employees[0],
-        dar_date=date(2026, 8, 20),
     )
     output = tmp_path / "report.xlsx"
     write_report(template, data, output)
@@ -36,10 +35,10 @@ def test_morning_report_mapping_and_template_integrity(tmp_path):
     for row, employee in zip((23, 24, 25), employees[1:4], strict=True):
         assert (sheet[f"D{row}"].value, sheet[f"E{row}"].value) == (employee.name, employee.pin)
     assert (sheet["D27"].value, sheet["E27"].value) == (employees[4].name, employees[4].pin)
-    for row, employee in zip((30, 31, 32), employees[1:4], strict=True):
-        assert sheet[f"D{row}"].value == f"Patrol by security officer: {employee.name}"
+    for row in (30, 31, 32):
+        assert sheet[f"D{row}"].value == f"Patrol by security officer: {employees[1].name}"
     assert sheet["D35"].value == employees[0].name
-    assert sheet["M35"].value == date(2026, 8, 20)
+    assert sheet["M35"].value == date(2026, 8, 19)
     assert generated.sheetnames == original.sheetnames
     assert set(generated["Shift Report"].merged_cells.ranges) == set(original["Shift Report"].merged_cells.ranges)
     for coordinate in ("F17", "H17", "J17", "L17", "F23", "H23", "J23", "L23", "M30"):

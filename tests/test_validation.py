@@ -22,8 +22,7 @@ def test_duplicate_security_officers_are_rejected():
     leader = Employee("Leader", "1")
     officer = Employee("Officer", "2")
     control = Employee("Control", "3")
-    data = ReportData(date.today(), leader, (officer, officer, Employee("Other", "4")), control, (officer, officer, officer), leader, date.today())
+    data = ReportData(date.today(), leader, (officer, officer, Employee("Other", "4")), control, officer, leader)
     roles = RoleConfig(("1",), "all", ("3",))
     errors = validate_report(data, _template(), roles)
     assert "Security Officers must be different employees." in errors
-

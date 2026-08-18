@@ -63,10 +63,10 @@ def write_report(template: TemplateConfig, data: ReportData, destination: Path) 
             sheet[mapping.pin] = employee.pin
         sheet[cells.control_room.name] = data.control_room.name
         sheet[cells.control_room.pin] = data.control_room.pin
-        for address, employee in zip(cells.patrols, data.patrols, strict=True):
-            sheet[address] = f"{template.patrol_prefix} {employee.name}"
+        for address in cells.patrols:
+            sheet[address] = f"{template.patrol_prefix} {data.patrol_officer.name}"
         sheet[cells.dar_officer] = data.dar_officer.name
-        _set_date(sheet[cells.dar_date], data.dar_date)
+        _set_date(sheet[cells.dar_date], data.shift_date)
         destination.parent.mkdir(parents=True, exist_ok=True)
         workbook.save(destination)
     except ReportError:
@@ -82,4 +82,3 @@ def write_report(template: TemplateConfig, data: ReportData, destination: Path) 
         raise ReportError("An unexpected Excel error occurred while generating the report.") from exc
     finally:
         workbook.close()
-

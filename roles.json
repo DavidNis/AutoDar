@@ -4,8 +4,7 @@
   "control_room": [],
   "settings": {
     "allow_primary_role_overlap": false,
-    "patrol_source": "assigned_security_officers",
-    "dar_source": "assigned_shift_employees"
+    "patrol_source": "all_security_officers",
+    "dar_source": "all_employees"
   }
 }
-

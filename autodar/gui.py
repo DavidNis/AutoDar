@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
-from datetime import date
 from pathlib import Path
 
 from PySide6.QtCore import QDate, Qt
@@ -55,7 +53,7 @@ class EmployeeCombo(QComboBox):
         self.addItem("", None)
         selected_index = 0
         for employee in employees:
-            self.addItem(employee.display, employee.pin)
+            self.addItem(employee.name, employee.pin)
             if employee.pin == preserve_pin:
                 selected_index = self.count() - 1
         self.setCurrentIndex(selected_index)
@@ -73,8 +71,6 @@ class MainWindow(QMainWindow):
         self.employees = load_employees(project_dir / "names_by_number.json")
         self.roles = load_roles(project_dir / "roles.json", set(self.employees))
         self.templates = load_templates(project_dir / "templates.json", project_dir)
-        self._syncing_dar_date = False
-        self._dar_date_manual = False
         self.last_report: Path | None = None
         self._build_ui()
         self._load_template(self.template_combo.currentData())
@@ -114,20 +110,15 @@ class MainWindow(QMainWindow):
         root.addWidget(personnel)
 
         lower = QHBoxLayout()
-        patrol_box = QGroupBox("Patrols")
+        patrol_box = QGroupBox("Patrol")
         patrol_form = QFormLayout(patrol_box)
-        self.patrols = [EmployeeCombo() for _ in range(3)]
-        for index, combo in enumerate(self.patrols):
-            patrol_form.addRow(f"Patrol {index + 1}", combo)
+        self.patrol_officer = EmployeeCombo()
+        patrol_form.addRow("Patrol by Security Officer", self.patrol_officer)
         lower.addWidget(patrol_box)
         dar_box = QGroupBox("DAR")
         dar_form = QFormLayout(dar_box)
         self.dar_officer = EmployeeCombo()
-        self.dar_date = QDateEdit(QDate.currentDate())
-        self.dar_date.setCalendarPopup(True)
-        self.dar_date.setDisplayFormat("dd/MM/yyyy")
         dar_form.addRow("DAR completed by", self.dar_officer)
-        dar_form.addRow("DAR Date", self.dar_date)
         lower.addWidget(dar_box)
         root.addLayout(lower)
 
@@ -150,10 +141,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.template_combo.currentIndexChanged.connect(lambda: self._load_template(self.template_combo.currentData()))
-        self.shift_date.dateChanged.connect(self._on_shift_date_changed)
-        self.dar_date.dateChanged.connect(self._on_dar_date_changed)
         for combo in [self.team_leader, *self.officers, self.control_room]:
-            combo.currentIndexChanged.connect(self._refresh_dependent_choices)
+            combo.currentIndexChanged.connect(self._validate_primary_selection)
         clear_button.clicked.connect(self.clear_form)
         generate_button.clicked.connect(self.generate_report)
         self.open_button.clicked.connect(self.open_report)
@@ -169,13 +158,14 @@ class MainWindow(QMainWindow):
     def _load_template(self, _key: str) -> None:
         template = self.template
         if len(template.cells.security_officers) != 3 or len(template.cells.patrols) != 3:
-            raise ConfigurationError("The current GUI supports exactly three officers and three patrols.")
+            raise ConfigurationError("The current GUI requires three officer positions and three patrol output rows.")
         self.team_leader.set_employees(self._eligible(self.roles.team_leaders))
         officer_pool = self._eligible(self.roles.security_officers)
         for combo in self.officers:
             combo.set_employees(officer_pool)
         self.control_room.set_employees(self._eligible(self.roles.control_room))
-        self._refresh_dependent_choices()
+        self.patrol_officer.set_employees(officer_pool)
+        self.dar_officer.set_employees(sorted_employees(self.employees))
         missing = []
         if not self._eligible(self.roles.team_leaders):
             missing.append("team_leaders")
@@ -186,22 +176,7 @@ class MainWindow(QMainWindow):
     def _primary_pins(self) -> list[str]:
         return [pin for pin in [self.team_leader.employee_pin(), *(c.employee_pin() for c in self.officers), self.control_room.employee_pin()] if pin]
 
-    def _refresh_dependent_choices(self) -> None:
-        officer_pins = [combo.employee_pin() for combo in self.officers if combo.employee_pin()]
-        if self.roles.patrol_source == "assigned_security_officers":
-            patrol_pool = [self.employees[pin] for pin in officer_pins]
-        else:
-            patrol_pool = self._eligible(self.roles.security_officers)
-        for combo in self.patrols:
-            combo.set_employees(patrol_pool, combo.employee_pin())
-
-        if self.roles.dar_source == "assigned_shift_employees":
-            pins = list(dict.fromkeys(self._primary_pins()))
-            dar_pool = [self.employees[pin] for pin in pins]
-        else:
-            dar_pool = sorted_employees(self.employees)
-        self.dar_officer.set_employees(dar_pool, self.dar_officer.employee_pin())
-
+    def _validate_primary_selection(self) -> None:
         if not self.roles.allow_primary_role_overlap:
             selected = self._primary_pins()
             if len(selected) != len(set(selected)):
@@ -210,25 +185,10 @@ class MainWindow(QMainWindow):
                     QMessageBox.warning(self, "Duplicate employee", "That employee already occupies another primary position.")
                     sender.setCurrentIndex(0)
 
-    def _on_shift_date_changed(self, value: QDate) -> None:
-        if not self._dar_date_manual:
-            self._syncing_dar_date = True
-            self.dar_date.setDate(value)
-            self._syncing_dar_date = False
-
-    def _on_dar_date_changed(self, _value: QDate) -> None:
-        if not self._syncing_dar_date:
-            self._dar_date_manual = True
-
     def clear_form(self) -> None:
-        for combo in [self.team_leader, *self.officers, self.control_room, *self.patrols, self.dar_officer]:
+        for combo in [self.team_leader, *self.officers, self.control_room, self.patrol_officer, self.dar_officer]:
             combo.setCurrentIndex(0)
-        today = QDate.currentDate()
-        self.shift_date.setDate(today)
-        self._dar_date_manual = False
-        self._syncing_dar_date = True
-        self.dar_date.setDate(today)
-        self._syncing_dar_date = False
+        self.shift_date.setDate(QDate.currentDate())
         self.last_report = None
         self.open_button.setVisible(False)
         self.status_label.setText("")
@@ -245,7 +205,7 @@ class MainWindow(QMainWindow):
         leader = self._selected(self.team_leader, "Security Team Leader", missing)
         officers = [self._selected(combo, f"Security Officer {i + 1}", missing) for i, combo in enumerate(self.officers)]
         control = self._selected(self.control_room, "Control Room", missing)
-        patrols = [self._selected(combo, f"Patrol {i + 1}", missing) for i, combo in enumerate(self.patrols)]
+        patrol = self._selected(self.patrol_officer, "Patrol by Security Officer", missing)
         dar = self._selected(self.dar_officer, "DAR completed by", missing)
         if missing:
             QMessageBox.warning(self, "Missing information", "Complete these fields:\n\n" + "\n".join(f"- {field}" for field in missing))
@@ -255,9 +215,8 @@ class MainWindow(QMainWindow):
             team_leader=leader,
             security_officers=tuple(officers),
             control_room=control,
-            patrols=tuple(patrols),
+            patrol_officer=patrol,
             dar_officer=dar,
-            dar_date=self.dar_date.date().toPython(),
         )
 
     def generate_report(self) -> None:

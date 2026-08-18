@@ -40,13 +40,13 @@ Edit `roles.json` and list eligible employee PINs under `team_leaders` and `cont
   "control_room": ["204470291"],
   "settings": {
     "allow_primary_role_overlap": false,
-    "patrol_source": "assigned_security_officers",
-    "dar_source": "assigned_shift_employees"
+    "patrol_source": "all_security_officers",
+    "dar_source": "all_employees"
   }
 }
 ```
 
-PINs must exist in `names_by_number.json`. Restart the application after editing configuration.
+PINs must exist in `names_by_number.json`. Patrol selection uses the configured Security Officer pool, while DAR Completed By uses all employees. Restart the application after editing configuration.
 
 ## Add another template
 

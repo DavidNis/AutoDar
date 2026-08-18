@@ -39,8 +39,8 @@ def load_roles(path: Path, employee_pins: set[str]) -> RoleConfig:
         security_officers=_pins(raw.get("security_officers"), "security_officers"),
         control_room=_pins(raw.get("control_room"), "control_room"),
         allow_primary_role_overlap=bool(settings.get("allow_primary_role_overlap", False)),
-        patrol_source=str(settings.get("patrol_source", "assigned_security_officers")),
-        dar_source=str(settings.get("dar_source", "assigned_shift_employees")),
+        patrol_source=str(settings.get("patrol_source", "all_security_officers")),
+        dar_source=str(settings.get("dar_source", "all_employees")),
     )
     for field in ("team_leaders", "security_officers", "control_room"):
         value = getattr(roles, field)
@@ -111,4 +111,3 @@ def load_templates(path: Path, project_dir: Path) -> dict[str, TemplateConfig]:
 
 def eligible_pins(value: tuple[str, ...] | str, employees: dict[str, object]) -> set[str]:
     return set(employees) if value == "all" else set(value)
-

@@ -153,10 +153,10 @@ def write_report(template: TemplateConfig, data: ReportData, destination: Path) 
             _set_text(root, mapping.pin, employee.pin)
         _set_text(root, cells.control_room.name, data.control_room.name)
         _set_text(root, cells.control_room.pin, data.control_room.pin)
-        for address, employee in zip(cells.patrols, data.patrols, strict=True):
-            _set_text(root, address, f"{template.patrol_prefix} {employee.name}")
+        for address in cells.patrols:
+            _set_text(root, address, f"{template.patrol_prefix} {data.patrol_officer.name}")
         _set_text(root, cells.dar_officer, data.dar_officer.name)
-        _set_date(root, cells.dar_date, data.dar_date)
+        _set_date(root, cells.dar_date, data.shift_date)
         _copy_archive_with_sheet(
             template.file, destination, sheet_path,
             ET.tostring(root, encoding="utf-8", xml_declaration=True),

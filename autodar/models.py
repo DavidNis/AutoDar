@@ -10,10 +10,6 @@ class Employee:
     name: str
     pin: str
 
-    @property
-    def display(self) -> str:
-        return f"{self.name} - {self.pin}"
-
 
 @dataclass(frozen=True)
 class PersonCells:
@@ -49,8 +45,8 @@ class RoleConfig:
     security_officers: tuple[str, ...] | str
     control_room: tuple[str, ...] | str
     allow_primary_role_overlap: bool = False
-    patrol_source: str = "assigned_security_officers"
-    dar_source: str = "assigned_shift_employees"
+    patrol_source: str = "all_security_officers"
+    dar_source: str = "all_employees"
 
 
 @dataclass(frozen=True)
@@ -59,7 +55,5 @@ class ReportData:
     team_leader: Employee
     security_officers: tuple[Employee, ...]
     control_room: Employee
-    patrols: tuple[Employee, ...]
+    patrol_officer: Employee
     dar_officer: Employee
-    dar_date: date
-
