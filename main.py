@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -14,8 +15,11 @@ def main() -> int:
     else:
         resource_dir = Path(__file__).resolve().parent
         output_dir = resource_dir
+    local_app_data = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    log_dir = local_app_data / "AutoDAR"
+    log_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
-        filename=output_dir / "autodar.log",
+        filename=log_dir / "autodar.log",
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
