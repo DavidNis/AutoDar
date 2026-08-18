@@ -1,0 +1,23 @@
+{
+  "morning": {
+    "display_name": "Morning Shift",
+    "file": "HFA18 Morning Shift Template Copy.xlsx",
+    "sheet": "Shift Report",
+    "output_filename": "HFA18 Morning Shift {date}.xlsx",
+    "patrol_prefix": "Patrol by security officer:",
+    "cells": {
+      "shift_date": "H9",
+      "team_leader": {"name": "D17", "pin": "E17"},
+      "security_officers": [
+        {"name": "D23", "pin": "E23"},
+        {"name": "D24", "pin": "E24"},
+        {"name": "D25", "pin": "E25"}
+      ],
+      "control_room": {"name": "D27", "pin": "E27"},
+      "patrols": ["D30", "D31", "D32"],
+      "dar_officer": "D35",
+      "dar_date": "M35"
+    }
+  }
+}
+
