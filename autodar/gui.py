@@ -177,9 +177,10 @@ class EmployeeCombo(QComboBox):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, project_dir: Path) -> None:
+    def __init__(self, project_dir: Path, output_dir: Path | None = None) -> None:
         super().__init__()
         self.project_dir = project_dir
+        self.output_dir = output_dir or project_dir
         self.employees = load_employees(project_dir / "names_by_number.json")
         self.roles = load_roles(project_dir / "roles.json", set(self.employees))
         self.templates = load_templates(project_dir / "templates.json", project_dir)
@@ -392,7 +393,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Cannot generate report", "\n".join(errors))
             return
         suggested = self.template.output_filename.format(date=data.shift_date.isoformat())
-        destination, _ = QFileDialog.getSaveFileName(self, "Save Shift Report", str(self.project_dir / suggested), "Excel Workbook (*.xlsx)")
+        destination, _ = QFileDialog.getSaveFileName(self, "Save Shift Report", str(self.output_dir / suggested), "Excel Workbook (*.xlsx)")
         if not destination:
             return
         if not destination.lower().endswith(".xlsx"):
@@ -412,11 +413,11 @@ class MainWindow(QMainWindow):
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(self.last_report)))
 
 
-def run(project_dir: Path) -> int:
+def run(project_dir: Path, output_dir: Path | None = None) -> int:
     app = QApplication.instance() or QApplication([])
     app.setApplicationName("AutoDAR")
     try:
-        window = MainWindow(project_dir)
+        window = MainWindow(project_dir, output_dir)
     except AutoDARError as exc:
         LOGGER.exception("Application startup failed")
         QMessageBox.critical(None, "AutoDAR could not start", str(exc))

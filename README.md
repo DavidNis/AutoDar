@@ -70,11 +70,18 @@ The workbook test writes to pytest's temporary directory and does not modify the
 
 ## Build an executable
 
-After installing `pyinstaller`, run:
+After installing `pyinstaller`, create a standalone executable with:
 
 ```powershell
 python -m pip install pyinstaller
-pyinstaller --noconfirm --windowed --name AutoDAR main.py
+pyinstaller --noconfirm --onefile --windowed --name AutoDAR `
+  --add-data "HFA18 Morning Shift Template Copy.xlsx;." `
+  --add-data "HFA18 Evening Shift template1.xlsx;." `
+  --add-data "HFA18 Night Shift Template Copy.xlsx;." `
+  --add-data "HFA18 Weekend Shift Template.xlsx;." `
+  --add-data "names_by_number.json;." `
+  --add-data "roles.json;." `
+  --add-data "templates.json;." main.py
 ```
 
-Place the four runtime data/configuration files listed above beside the built executable. For a packaged deployment, adjust `main.py` to select the executable directory when frozen.
+The resulting `dist/AutoDAR.exe` contains the Python and Qt runtimes, templates, and configuration, so it can be copied and run by itself.
