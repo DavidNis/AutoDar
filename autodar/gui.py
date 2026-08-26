@@ -239,6 +239,7 @@ class MainWindow(QMainWindow):
         grid.setVerticalSpacing(12)
         self.team_leader = EmployeeCombo()
         self.officers = [EmployeeCombo() for _ in range(3)]
+        self.officer_fields: list[QWidget] = []
         self.control_room = EmployeeCombo()
         personnel_fields = [("Security Team Leader", self.team_leader)]
         personnel_fields += [(f"Security Officer {index + 1}", combo) for index, combo in enumerate(self.officers)]
@@ -255,6 +256,8 @@ class MainWindow(QMainWindow):
             field_layout.addWidget(label_widget)
             field_layout.addWidget(combo)
             grid.addWidget(field, row, column)
+            if combo in self.officers:
+                self.officer_fields.append(field)
         grid.setColumnStretch(0, 1)
         grid.setColumnStretch(1, 1)
         root.addWidget(personnel)
@@ -324,6 +327,8 @@ class MainWindow(QMainWindow):
         selected_control = self.control_room.employee_pin()
         selected_patrol = self.patrol_officer.employee_pin()
         selected_dar = self.dar_officer.employee_pin()
+        for field in self.officer_fields:
+            field.setVisible(template.security_officers_required)
         self.team_leader.set_employees(self._eligible(self.roles.team_leaders), selected_leader)
         officer_pool = self._eligible(self.roles.security_officers)
         for combo, pin in zip(self.officers, selected_officers, strict=True):
@@ -368,7 +373,10 @@ class MainWindow(QMainWindow):
     def _report_data(self) -> ReportData | None:
         missing: list[str] = []
         leader = self._selected(self.team_leader, "Security Team Leader", missing)
-        officers = [self._selected(combo, f"Security Officer {i + 1}", missing) for i, combo in enumerate(self.officers)]
+        officers = (
+            [self._selected(combo, f"Security Officer {i + 1}", missing) for i, combo in enumerate(self.officers)]
+            if self.template.security_officers_required else []
+        )
         control = self._selected(self.control_room, "Control Room", missing)
         patrol = self._selected(self.patrol_officer, "Patrol by Security Officer", missing)
         dar = self._selected(self.dar_officer, "DAR completed by", missing)

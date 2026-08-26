@@ -37,6 +37,7 @@ class TemplateConfig:
     output_filename: str
     patrol_prefix: str
     cells: TemplateCells
+    security_officers_required: bool = True
 
 
 @dataclass(frozen=True)

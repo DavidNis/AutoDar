@@ -213,7 +213,9 @@ def write_report(template: TemplateConfig, data: ReportData, destination: Path) 
         _set_date(root, cells.shift_date, data.shift_date, date_style_id)
         _set_text(root, cells.team_leader.name, data.team_leader.name)
         _set_text(root, cells.team_leader.pin, data.team_leader.pin)
-        for mapping, employee in zip(cells.security_officers, data.security_officers, strict=True):
+        for mapping, employee in zip(
+            cells.security_officers, data.security_officers, strict=template.security_officers_required
+        ):
             _set_text(root, mapping.name, employee.name)
             _set_text(root, mapping.pin, employee.pin)
         _set_text(root, cells.control_room.name, data.control_room.name)

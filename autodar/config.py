@@ -105,6 +105,7 @@ def load_templates(path: Path, project_dir: Path) -> dict[str, TemplateConfig]:
                 dar_officer=_cell(cells.get("dar_officer"), "dar_officer"),
                 dar_date=_cell(cells.get("dar_date"), "dar_date"),
             ),
+            security_officers_required=bool(item.get("security_officers_required", True)),
         )
     return templates
 

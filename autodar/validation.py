@@ -5,7 +5,7 @@ from .models import ReportData, RoleConfig, TemplateConfig
 
 def validate_report(data: ReportData, template: TemplateConfig, roles: RoleConfig) -> list[str]:
     errors: list[str] = []
-    if len(data.security_officers) != len(template.cells.security_officers):
+    if template.security_officers_required and len(data.security_officers) != len(template.cells.security_officers):
         errors.append(f"Select all {len(template.cells.security_officers)} Security Officers.")
     officer_pins = [employee.pin for employee in data.security_officers]
     if len(officer_pins) != len(set(officer_pins)):

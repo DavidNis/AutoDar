@@ -41,6 +41,7 @@
   },
   "night": {
     "display_name": "Night",
+    "security_officers_required": false,
     "file": "HFA18 Night Shift Template Copy.xlsx",
     "sheet": "Shift Report",
     "output_filename": "HFA18 Night Shift {date}.xlsx",

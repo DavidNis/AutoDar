@@ -85,3 +85,20 @@ def test_shift_selector_lists_all_templates_and_preserves_selections():
         ) == selected
     finally:
         window.close()
+
+
+def test_night_shift_hides_and_does_not_require_security_officers():
+    window = _window()
+    try:
+        window.template_combo.setCurrentIndex(window.template_combo.findData("night"))
+        assert all(field.isHidden() for field in window.officer_fields)
+
+        window.team_leader.setCurrentIndex(1)
+        window.control_room.setCurrentIndex(1)
+        window.patrol_officer.setCurrentIndex(1)
+        window.dar_officer.setCurrentIndex(1)
+        data = window._report_data()
+        assert data is not None
+        assert data.security_officers == ()
+    finally:
+        window.close()

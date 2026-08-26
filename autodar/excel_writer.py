@@ -58,7 +58,9 @@ def write_report(template: TemplateConfig, data: ReportData, destination: Path) 
         _set_date(sheet[cells.shift_date], data.shift_date)
         sheet[cells.team_leader.name] = data.team_leader.name
         sheet[cells.team_leader.pin] = data.team_leader.pin
-        for mapping, employee in zip(cells.security_officers, data.security_officers, strict=True):
+        for mapping, employee in zip(
+            cells.security_officers, data.security_officers, strict=template.security_officers_required
+        ):
             sheet[mapping.name] = employee.name
             sheet[mapping.pin] = employee.pin
         sheet[cells.control_room.name] = data.control_room.name

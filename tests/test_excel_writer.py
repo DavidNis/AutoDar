@@ -72,3 +72,24 @@ def test_shift_report_mapping_and_template_integrity(tmp_path, template_key, con
             assert f"xmlns:{prefix}=" in worksheet_xml
         assert 'mc:Ignorable="x14ac xr xr2 xr3"' in worksheet_xml
     assert sha256(template.file.read_bytes()).hexdigest() == original_hash
+
+
+def test_night_report_can_be_written_without_security_officers(tmp_path):
+    employees = list(load_employees(ROOT / "names_by_number.json").values())
+    template = load_templates(ROOT / "templates.json", ROOT)["night"]
+    data = ReportData(
+        shift_date=date(2026, 8, 19),
+        team_leader=employees[0],
+        security_officers=(),
+        control_room=employees[1],
+        patrol_officer=employees[2],
+        dar_officer=employees[0],
+    )
+    output = tmp_path / "night-report.xlsx"
+
+    write_report(template, data, output)
+
+    generated = load_workbook(output, data_only=False)
+    sheet = generated["Shift Report"]
+    assert all(sheet[f"{column}{row}"].value is None for row in (23, 24, 25) for column in ("D", "E"))
+    generated.close()
